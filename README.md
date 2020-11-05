@@ -1,0 +1,1 @@
+# Walleta - WooCommerce Plugin
