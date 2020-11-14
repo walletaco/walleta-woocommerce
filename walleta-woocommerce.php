@@ -1,10 +1,10 @@
 <?php
 /*
-Plugin Name: افزونه درگاه پرداخت اقساطی والتا
+Plugin Name: افزونه درگاه پرداخت اعتباری والتا
 Plugin URI: https://github.com/walletaco/walleta-woocommerce
-Description: افزونه درگاه پرداخت اقساطی والتا برای سیستم فروشگاه‌ساز ووکامرس
+Description: افزونه درگاه پرداخت اعتباری (اقساطی) والتا برای سیستم فروشگاه‌ساز ووکامرس
 Author: Mahmood Dehghani
-Version: 1.0.0
+Version: 1.1.0
 */
 
 if (!defined('ABSPATH')) {
