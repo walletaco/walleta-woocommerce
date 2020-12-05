@@ -108,7 +108,7 @@ function walleta_init_payment_gateway()
             if (empty($_POST['payer_mobile'])) {
                 wc_add_notice(__('<strong>شماره موبایل</strong> یک گزینه الزامی است.', 'walleta'), 'error');
                 $isValid = false;
-            } elseif (!Walleta_Validation::mobile($_POST['payer_mobile'])) {
+            } elseif (!Walleta_Validation::mobile(Walleta_Persian_Text::toEnglishNumber($_POST['payer_mobile']))) {
                 wc_add_notice(__('<strong>شماره موبایل</strong> خود را صحیح وارد کنید.', 'walleta'), 'error');
                 $isValid = false;
             }
@@ -116,7 +116,7 @@ function walleta_init_payment_gateway()
             if (empty($_POST['payer_national_code'])) {
                 wc_add_notice(__('<strong>کد ملی</strong> یک گزینه الزامی است.', 'walleta'), 'error');
                 $isValid = false;
-            } elseif (!Walleta_Validation::nationalCode($_POST['payer_national_code'])) {
+            } elseif (!Walleta_Validation::nationalCode(Walleta_Persian_Text::toEnglishNumber($_POST['payer_national_code']))) {
                 wc_add_notice(__('<strong>کد ملی</strong> خود را صحیح وارد کنید.', 'walleta'), 'error');
                 $isValid = false;
             }
@@ -149,11 +149,13 @@ function walleta_init_payment_gateway()
         public function checkout_update_order_meta($order_id)
         {
             if (!empty($_POST['payer_national_code'])) {
-                update_post_meta($order_id, 'payer_national_code', sanitize_text_field($_POST['payer_national_code']));
+                $national_code = sanitize_text_field(Walleta_Persian_Text::toEnglishNumber($_POST['payer_national_code']));
+                update_post_meta($order_id, 'payer_national_code', $national_code);
             }
 
             if (!empty($_POST['payer_mobile'])) {
-                update_post_meta($order_id, 'payer_mobile', sanitize_text_field($_POST['payer_mobile']));
+                $mobile = sanitize_text_field(Walleta_Persian_Text::toEnglishNumber($_POST['payer_mobile']));
+                update_post_meta($order_id, 'payer_mobile', $mobile);
             }
         }
 
