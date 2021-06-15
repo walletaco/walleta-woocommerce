@@ -87,16 +87,19 @@ function walleta_init_payment_gateway()
 
             echo '<fieldset id="wc-' . esc_attr($this->id) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
 
-            echo '
-		<div class="form-row form-row-first">
-			<label>موبایل <span class="required">*</span></label>
-			<input name="payer_mobile" type="text" autocomplete="off" placeholder="شماره موبایل" maxlength="11">
-		</div>
-		<div class="form-row form-row-last">
-			<label>کد ملی <span class="required">*</span></label>
-			<input name="payer_national_code" type="text" autocomplete="off" placeholder="کد ملی" maxlength="10">
-		</div>
-		<div class="clear"></div>';
+            echo sprintf(
+                '<div class="form-row form-row-first">
+                    <label>موبایل <span class="required">*</span></label>
+                    <input name="payer_mobile" value="%s" type="text" autocomplete="off" placeholder="شماره موبایل" maxlength="11">
+                </div>
+                <div class="form-row form-row-last">
+                    <label>کد ملی <span class="required">*</span></label>
+                    <input name="payer_national_code" value="%s" type="text" autocomplete="off" placeholder="کد ملی" maxlength="10">
+                </div>
+                <div class="clear"></div>',
+                WC()->session->get( 'payer_mobile', ''),
+                WC()->session->get( 'payer_national_code', '')
+            );
 
             echo '<div class="clear"></div></fieldset>';
         }
@@ -119,6 +122,11 @@ function walleta_init_payment_gateway()
             } elseif (!Walleta_Validation::nationalCode(Walleta_Persian_Text::toEnglishNumber($_POST['payer_national_code']))) {
                 wc_add_notice(__('<strong>کد ملی</strong> خود را صحیح وارد کنید.', 'walleta'), 'error');
                 $isValid = false;
+            }
+
+            if ($isValid) {
+                WC()->session->set( 'payer_mobile', $_POST['payer_mobile']);
+                WC()->session->set( 'payer_national_code', $_POST['payer_national_code']);
             }
 
             return $isValid;
