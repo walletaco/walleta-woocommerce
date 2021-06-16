@@ -85,48 +85,48 @@ function walleta_init_payment_gateway()
                 echo wpautop(wp_kses_post($this->description));
             }
 
-            echo '<fieldset id="wc-' . esc_attr($this->id) . '-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">';
-
             echo sprintf(
-                '<div class="form-row form-row-first">
-                    <label>موبایل <span class="required">*</span></label>
-                    <input name="payer_mobile" value="%s" type="text" autocomplete="off" placeholder="شماره موبایل" maxlength="11">
-                </div>
-                <div class="form-row form-row-last">
-                    <label>کد ملی <span class="required">*</span></label>
-                    <input name="payer_national_code" value="%s" type="text" autocomplete="off" placeholder="کد ملی" maxlength="10">
-                </div>
-                <div class="clear"></div>',
-                WC()->session->get( 'payer_mobile', ''),
-                WC()->session->get( 'payer_national_code', '')
+                '<fieldset id="wc-%s-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">
+                    <div class="form-row form-row-first">
+                        <label>موبایل <span class="required">*</span></label>
+                        <input name="payer_mobile" value="%s" type="text" autocomplete="off" placeholder="شماره موبایل" maxlength="11">
+                    </div>
+                    <div class="form-row form-row-last">
+                        <label>کد ملی <span class="required">*</span></label>
+                        <input name="payer_national_code" value="%s" type="text" autocomplete="off" placeholder="کد ملی" maxlength="10">
+                    </div>
+                    <div class="clear"></div>
+                </fieldset>',
+                esc_attr($this->id),
+                $this->getPayerMobile(),
+                $this->getPayerNationalCode()
             );
-
-            echo '<div class="clear"></div></fieldset>';
         }
 
         public function validate_fields()
         {
             $isValid = true;
 
-            if (empty($_POST['payer_mobile'])) {
+            $mobile = $this->getPayerMobile();
+            $nationalCode = $this->getPayerNationalCode();
+
+            WC()->session->set('payer_mobile', $mobile);
+            WC()->session->set('payer_national_code', $nationalCode);
+
+            if (!$mobile) {
                 wc_add_notice(__('<strong>شماره موبایل</strong> یک گزینه الزامی است.', 'walleta'), 'error');
                 $isValid = false;
-            } elseif (!Walleta_Validation::mobile(Walleta_Persian_Text::toEnglishNumber($_POST['payer_mobile']))) {
+            } elseif (!Walleta_Validation::mobile($mobile)) {
                 wc_add_notice(__('<strong>شماره موبایل</strong> خود را صحیح وارد کنید.', 'walleta'), 'error');
                 $isValid = false;
             }
 
-            if (empty($_POST['payer_national_code'])) {
+            if (!$nationalCode) {
                 wc_add_notice(__('<strong>کد ملی</strong> یک گزینه الزامی است.', 'walleta'), 'error');
                 $isValid = false;
-            } elseif (!Walleta_Validation::nationalCode(Walleta_Persian_Text::toEnglishNumber($_POST['payer_national_code']))) {
+            } elseif (!Walleta_Validation::nationalCode($nationalCode)) {
                 wc_add_notice(__('<strong>کد ملی</strong> خود را صحیح وارد کنید.', 'walleta'), 'error');
                 $isValid = false;
-            }
-
-            if ($isValid) {
-                WC()->session->set( 'payer_mobile', $_POST['payer_mobile']);
-                WC()->session->set( 'payer_national_code', $_POST['payer_national_code']);
             }
 
             return $isValid;
@@ -134,12 +134,12 @@ function walleta_init_payment_gateway()
 
         public function checkout_field_display_admin_order_meta($order)
         {
-            $national_code = $order->get_meta('payer_national_code');
-            if ($national_code) {
+            $nationalCode = $order->get_meta('payer_national_code');
+            if ($nationalCode) {
                 echo sprintf(
                     '<p><strong>%s</strong> %s</p>',
                     __('کد ملی خریدار:', 'walleta'),
-                    $order->get_meta('payer_national_code')
+                    $nationalCode
                 );
             }
 
@@ -148,21 +148,21 @@ function walleta_init_payment_gateway()
                 echo sprintf(
                     '<p><strong>%s</strong> <a href="tel:%s">%s</a></p>',
                     __('موبایل خریدار:', 'walleta'),
-                    $order->get_meta('payer_mobile'),
-                    $order->get_meta('payer_mobile')
+                    $mobile,
+                    $mobile
                 );
             }
         }
 
         public function checkout_update_order_meta($order_id)
         {
-            if (!empty($_POST['payer_national_code'])) {
-                $national_code = sanitize_text_field(Walleta_Persian_Text::toEnglishNumber($_POST['payer_national_code']));
-                update_post_meta($order_id, 'payer_national_code', $national_code);
+            $nationalCode = $this->getPayerNationalCode();
+            if ($nationalCode) {
+                update_post_meta($order_id, 'payer_national_code', $nationalCode);
             }
 
-            if (!empty($_POST['payer_mobile'])) {
-                $mobile = sanitize_text_field(Walleta_Persian_Text::toEnglishNumber($_POST['payer_mobile']));
+            $mobile = $this->getPayerMobile();
+            if ($mobile) {
                 update_post_meta($order_id, 'payer_mobile', $mobile);
             }
         }
@@ -270,6 +270,14 @@ function walleta_init_payment_gateway()
                 'items' => [],
             ];
 
+            if (!$data['payer_national_code']) {
+                $data['payer_national_code'] = $this->getPayerNationalCode();
+            }
+
+            if (!$data['payer_mobile']) {
+                $data['payer_mobile'] = $this->getPayerMobile();
+            }
+
             foreach ($order->get_items() as $product) {
                 $productData = $product->get_data();
 
@@ -313,6 +321,24 @@ function walleta_init_payment_gateway()
                 'invoice_reference' => $order->get_order_number(),
                 'invoice_amount' => $totalAmount,
             ];
+        }
+
+        protected function getPayerNationalCode()
+        {
+            if (!empty($_POST['payer_national_code'])) {
+                return Walleta_Persian_Text::toEnglishNumber(sanitize_text_field($_POST['payer_national_code']));
+            }
+
+            return WC()->session->get('payer_national_code', '');
+        }
+
+        protected function getPayerMobile()
+        {
+            if (!empty($_POST['payer_mobile'])) {
+                return Walleta_Persian_Text::toEnglishNumber(sanitize_text_field($_POST['payer_mobile']));
+            }
+
+            return WC()->session->get('payer_mobile', '');
         }
 
         protected function convert_money($currency, $amount)
