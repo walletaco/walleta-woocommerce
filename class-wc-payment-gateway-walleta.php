@@ -280,15 +280,21 @@ function walleta_init_payment_gateway()
 
             foreach ($order->get_items() as $product) {
                 $productData = $product->get_data();
+                $unitPrice = $product['subtotal'] > 0 ? $product['subtotal'] / $productData['quantity'] : 0;
+                $unitTax = $product['total_tax'] > 0 ? $product['total_tax'] / $productData['quantity'] : 0;
+
+                $unitDiscount = $product['subtotal'] - $product['total'];
+                if ($unitDiscount > 0) {
+                    $unitDiscount = $unitDiscount / $productData['quantity'];
+                }
 
                 $data['items'][] = [
                     'reference' => $productData['product_id'],
                     'name' => $productData['name'],
                     'quantity' => $productData['quantity'],
-                    'unit_price' => $this->convert_money($currency, $product['subtotal'] / $productData['quantity']),
-                    'unit_discount' => 0,
-                    'unit_tax_amount' => $product['subtotal_tax'] > 0 ?
-                        $this->convert_money($currency, $product['subtotal_tax'] / $product['quantity']) : 0,
+                    'unit_price' => $this->convert_money($currency, $unitPrice),
+                    'unit_discount' => $this->convert_money($currency, $unitDiscount),
+                    'unit_tax_amount' => $this->convert_money($currency, $unitTax),
                     'total_amount' => $this->convert_money($currency, $product['total'] + $product['total_tax']),
                 ];
             }
